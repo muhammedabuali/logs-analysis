@@ -29,7 +29,11 @@ def process_line(line):
     if process_using_lane_event_message(using_lane_events, line):
         return
     free_lane_events = []
-    if process_free_lane_event_message(free_lane_events, line, True):
+    if process_free_lane_event_message(free_lane_events, line):
+        return
+    if process_pickup_done_event_message(free_lane_events, line):
+        return
+    if process_schedule_done_message(free_lane_events, line, True):
         return
 
 def process_added_container_message(added_containers, line, output=False):
@@ -104,6 +108,28 @@ def process_free_lane_event_message(recorded_events, line, output=False):
         recorded_events.append([timestamp, loc_id, lane_num, order_id])
         if output:
             print(f"timestamp {timestamp} location {loc_id} freeing lane {lane_num} for order {order_id}")
+        return True
+    return False
+
+def process_pickup_done_event_message(recorded_events, line, output=False):
+    pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) INFO (.+) (\(.+\)) finished at (.+)'
+    matching = re.match(pattern, line)
+    if matching:
+        timestamp, vehicle_id, body, loc_id = matching.groups()
+        recorded_events.append([timestamp, vehicle_id, body, loc_id])
+        if output:
+            print(f"timestamp {timestamp} vehicle {vehicle_id} finished working at location {loc_id}")
+        return True
+    return False
+
+def process_schedule_done_message(added_schedule, line, output=False):
+    pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) DEBUG finished expected schedule_element (.+)'
+    matching = re.match(pattern, line)
+    if matching:
+        timestamp, schedule = matching.groups()
+        added_schedule.append([timestamp, schedule])
+        if output:
+            print(f"timestamp {timestamp} finished schedule element {schedule}")
         return True
     return False
 
