@@ -1,39 +1,47 @@
 import re
 
+
+class LogEventManager(object):
+    def __init__(self):
+        self.added_containers = []
+        self.added_schedule = []
+        self.starting_events = []
+        self.driving_events = []
+        self.pickup_events = []
+        self.using_lane_events = []
+        self.free_lane_events = []
+        self.pickup_done_events = []
+        self.schedule_done_events = []
+
 def parse_log_file(filepath):
+    manager = LogEventManager()
     with open(filepath, "r", encoding="utf-8") as file:
         for line in file:
-            process_line(line)  # Custom function to process individual lines
+            process_line(manager, line)  # Custom function to process individual lines
+
+
 
 # Extract timestamp and log level using regex
-# Error: event arrays are local and will be cleared at end of each call
 # TODO: write assert that all methods have non empty matches
 # TODO: use .+ instead of \w+ and test
-def process_line(line):
-    added_containers = []
-    if process_added_container_message(added_containers, line):
+def process_line(manager, line):
+    if process_added_container_message(manager.added_containers, line):
         return
-    added_schedule = []
-    if process_schedule_message(added_schedule, line):
+    if process_schedule_message(manager.added_schedule, line):
         return
-    starting_events = []
-    if process_starting_event_message(starting_events, line):
+    if process_starting_event_message(manager.starting_events, line):
         return
-    driving_events = []
-    if process_driving_event_message(driving_events, line):
+    if process_driving_event_message(manager.driving_events, line, True):
         return
-    pickup_events = []
-    if process_pickup_event_message(pickup_events, line):
+    if process_pickup_event_message(manager.pickup_events, line):
         return
-    using_lane_events = []
-    if process_using_lane_event_message(using_lane_events, line):
+    if process_using_lane_event_message(manager.using_lane_events, line):
         return
-    free_lane_events = []
-    if process_free_lane_event_message(free_lane_events, line):
+    if process_free_lane_event_message(manager.free_lane_events, line):
         return
-    if process_pickup_done_event_message(free_lane_events, line):
+    if process_pickup_done_event_message(manager.pickup_done_events, line):
         return
-    if process_schedule_done_message(free_lane_events, line, True):
+    if process_schedule_done_message(manager.schedule_done_events, line):
         return
 
 def process_added_container_message(added_containers, line, output=False):
