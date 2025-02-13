@@ -17,6 +17,25 @@ org_y= "Origin Y-Coordinate"
 dst_x= "Destination X-Coordinate"
 dst_y= "Destination Y-Coordinate"
 
+class ExcelDataManger(object):
+    def __init__(self):
+        self.df_locations = pd.DataFrame()
+        self.df_vehicles = pd.DataFrame()
+        self.df_orders = pd.DataFrame()
+
+def parse_exceldata(path: str):
+    data = ExcelDataManger()
+    data.df_locations = pd.read_excel(path, sheet_names[0])\
+        .apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+
+    data.df_vehicles = pd.read_excel(path, sheet_names[1])\
+        .apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+
+    data.df_orders = pd.read_excel(path, sheet_names[2])\
+        .apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+
+    return data
+
 def plot_exceldata(path: str):
     df_locations = pd.read_excel(path, sheet_names[0])\
         .apply(lambda x: x.str.strip() if x.dtype == "object" else x)

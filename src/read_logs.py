@@ -1,24 +1,28 @@
 import re
+import pandas as pd
 
 
 class LogEventManager(object):
     def __init__(self):
-        self.added_containers = []
-        self.added_schedule = []
-        self.starting_events = []
-        self.driving_events = []
-        self.pickup_events = []
-        self.using_lane_events = []
-        self.free_lane_events = []
-        self.pickup_done_events = []
-        self.schedule_done_events = []
+        self.added_containers = pd.DataFrame(columns=["timestamp", "order_id"])
+        self.added_schedule = pd.DataFrame(columns=["timestamp", "vehicle_id", "schedule"])
+        self.starting_events = pd.DataFrame(columns=["timestamp", "vehicle_id", "event"])
+        self.driving_events = pd.DataFrame(columns=["timestamp", "vehicle_id", "body", "loc_id", "seconds", "distance"])
+        self.pickup_events = pd.DataFrame(columns=["timestamp", "vehicle_id", "body", "loc_id", "seconds"])
+        self.using_lane_events = pd.DataFrame(columns=["timestamp", "loc_id", "lane_num", "order_id"])
+        self.free_lane_events = pd.DataFrame(columns=["timestamp", "loc_id", "lane_num", "order_id"])
+        self.pickup_done_events = pd.DataFrame(columns=["timestamp", "vehicle_id", "body", "loc_id"])
+        self.schedule_done_events = pd.DataFrame(columns=["timestamp", "schedule"])
 
 def parse_log_file(filepath):
     manager = LogEventManager()
     with open(filepath, "r", encoding="utf-8") as file:
         for line in file:
             process_line(manager, line)  # Custom function to process individual lines
+    return manager
 
+def append(df, new_row):
+    df.loc[len(df)] = new_row
 
 
 # Extract timestamp and log level using regex
@@ -31,7 +35,7 @@ def process_line(manager, line):
         return
     if process_starting_event_message(manager.starting_events, line):
         return
-    if process_driving_event_message(manager.driving_events, line, True):
+    if process_driving_event_message(manager.driving_events, line):
         return
     if process_pickup_event_message(manager.pickup_events, line):
         return
@@ -49,7 +53,7 @@ def process_added_container_message(added_containers, line, output=False):
     matching = re.match(pattern, line)
     if matching:
         timestamp, order_id = matching.groups()
-        added_containers.append([timestamp, order_id])
+        append(added_containers,[timestamp, order_id])
         return True
     return False
 
@@ -58,7 +62,7 @@ def process_schedule_message(added_schedule, line, output=False):
     matching = re.match(pattern, line)
     if matching:
         timestamp, vehicle_id, schedule = matching.groups()
-        added_schedule.append([timestamp, vehicle_id, schedule])
+        append(added_schedule,[timestamp, vehicle_id, schedule])
         if output:
             print(f"timestamp {timestamp} added for vehicle {vehicle_id} schedule {schedule}")
         return True
@@ -69,7 +73,7 @@ def process_starting_event_message(recorded_events, line, output=False):
     matching = re.match(pattern, line)
     if matching:
         timestamp, vehicle_id, event = matching.groups()
-        recorded_events.append([timestamp, vehicle_id, event])
+        append(recorded_events,[timestamp, vehicle_id, event])
         if output:
             print(f"timestamp {timestamp} event for vehicle {vehicle_id} : {event}")
         return True
@@ -80,7 +84,7 @@ def process_driving_event_message(recorded_events, line, output=False):
     matching = re.match(pattern, line)
     if matching:
         timestamp, vehicle_id, body, loc_id, seconds, distance = matching.groups()
-        recorded_events.append([timestamp, vehicle_id, body, loc_id, seconds, distance])
+        append(recorded_events,[timestamp, vehicle_id, body, loc_id, seconds, distance])
         if output:
             print(f"timestamp {timestamp} driving vehicle {vehicle_id} to location {loc_id} for time {seconds} s")
         return True
@@ -91,7 +95,7 @@ def process_pickup_event_message(recorded_events, line, output=False):
     matching = re.match(pattern, line)
     if matching:
         timestamp, vehicle_id, body, loc_id, seconds = matching.groups()
-        recorded_events.append([timestamp, vehicle_id, body, loc_id, seconds])
+        append(recorded_events,[timestamp, vehicle_id, body, loc_id, seconds])
         if output:
             print(f"timestamp {timestamp} vehicle {vehicle_id} working at location {loc_id} for time {seconds} s")
         return True
@@ -102,7 +106,7 @@ def process_using_lane_event_message(recorded_events, line, output=False):
     matching = re.match(pattern, line)
     if matching:
         timestamp, loc_id, lane_num, order_id = matching.groups()
-        recorded_events.append([timestamp, loc_id, lane_num, order_id])
+        append(recorded_events,([timestamp, loc_id, lane_num, order_id]))
         if output:
             print(f"timestamp {timestamp} location {loc_id} using lane {lane_num} for order {order_id}")
         return True
@@ -113,7 +117,7 @@ def process_free_lane_event_message(recorded_events, line, output=False):
     matching = re.match(pattern, line)
     if matching:
         timestamp, loc_id, lane_num, order_id = matching.groups()
-        recorded_events.append([timestamp, loc_id, lane_num, order_id])
+        append(recorded_events,[timestamp, loc_id, lane_num, order_id])
         if output:
             print(f"timestamp {timestamp} location {loc_id} freeing lane {lane_num} for order {order_id}")
         return True
@@ -124,7 +128,7 @@ def process_pickup_done_event_message(recorded_events, line, output=False):
     matching = re.match(pattern, line)
     if matching:
         timestamp, vehicle_id, body, loc_id = matching.groups()
-        recorded_events.append([timestamp, vehicle_id, body, loc_id])
+        append(recorded_events,[timestamp, vehicle_id, body, loc_id])
         if output:
             print(f"timestamp {timestamp} vehicle {vehicle_id} finished working at location {loc_id}")
         return True
@@ -135,7 +139,7 @@ def process_schedule_done_message(added_schedule, line, output=False):
     matching = re.match(pattern, line)
     if matching:
         timestamp, schedule = matching.groups()
-        added_schedule.append([timestamp, schedule])
+        append(added_schedule,[timestamp, schedule])
         if output:
             print(f"timestamp {timestamp} finished schedule element {schedule}")
         return True
