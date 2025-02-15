@@ -6,7 +6,7 @@ class LogEventManager(object):
     def __init__(self):
         self.added_containers = pd.DataFrame(columns=["timestamp", "order_id"])
         self.added_schedule = pd.DataFrame(columns=["timestamp", "vehicle_id", "schedule"])
-        self.starting_events = pd.DataFrame(columns=["timestamp", "vehicle_id", "event"])
+        self.starting_events = pd.DataFrame(columns=["timestamp", "vehicle_id", "order_id"])
         self.driving_events = pd.DataFrame(columns=["timestamp", "vehicle_id", "body", "loc_id", "seconds", "distance"])
         self.pickup_events = pd.DataFrame(columns=["timestamp", "vehicle_id", "body", "loc_id", "seconds"])
         self.using_lane_events = pd.DataFrame(columns=["timestamp", "loc_id", "lane_num", "order_id"])
@@ -69,11 +69,11 @@ def process_schedule_message(added_schedule, line, output=False):
     return False
 
 def process_starting_event_message(recorded_events, line, output=False):
-    pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) INFO (SC\w+) starting (.+)'
+    pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) INFO (SC\w+) starting .+#(.+)#.+'
     matching = re.match(pattern, line)
     if matching:
-        timestamp, vehicle_id, event = matching.groups()
-        append(recorded_events,[timestamp, vehicle_id, event])
+        timestamp, vehicle_id, order_id = matching.groups()
+        append(recorded_events,[timestamp, vehicle_id, order_id])
         if output:
             print(f"timestamp {timestamp} event for vehicle {vehicle_id} : {event}")
         return True
@@ -146,4 +146,5 @@ def process_schedule_done_message(added_schedule, line, output=False):
     return False
 
 if __name__ == "__main__":
-    parse_log_file("./all-logs/logger_all.log")
+    manager = parse_log_file("./all-logs/logger_all.log")
+    manager.starting_events.to_csv("assigments.csv")
