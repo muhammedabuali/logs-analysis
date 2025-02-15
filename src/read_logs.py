@@ -26,8 +26,6 @@ def append(df, new_row):
 
 
 # Extract timestamp and log level using regex
-# TODO: write assert that all methods have non empty matches
-# TODO: use .+ instead of \w+ and test
 def process_line(manager, line):
     if process_added_container_message(manager.added_containers, line):
         return
