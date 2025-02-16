@@ -13,6 +13,8 @@ a_seconds = "seconds"
 a_timestamp = "timestamp"
 a_distance = "distance"
 a_id = "ID"
+order_org = "OriginLocation"
+order_dst = "DestinationLocation"
 
 
 # from date time to seconds in a day
@@ -127,15 +129,41 @@ class DataManager(object):
         order_count = df[a_order_id].drop_duplicates().shape[0]
         return order_count
 
+    def get_vehicle_wait_time(self,vehicle_id):
+        df = self.log_data.waiting_events
+        df = df[df[a_vehicle_id]== vehicle_id]
+        wait_time = df[a_seconds].astype(int).sum()
+        return wait_time
+
     def get_all_vehicle_stats(self):
         stats = []
         for _,row in self.excel_data.df_vehicles.iterrows():
-            dist = self.get_distance_traveled(row[a_id])
-            order_count = self.get_assigned_orders_count(row[a_id])
-            print(f"vehicle {row[a_id]}, traveled distance {dist} to fullfil {order_count} orders")
-            stats.append([dist, order_count])
+            v_id = row[a_id]
+            dist = self.get_distance_traveled(v_id)
+            order_count = self.get_assigned_orders_count(v_id)
+            wait_time = self.get_vehicle_wait_time(v_id)
+            # print(f"vehicle {v_id}, traveled distance {dist} to fullfil {order_count} orders and waited in total {wait_time}")
+            stats.append([dist, order_count, wait_time])
 
+    def get_location_order_count(self, loc_id):
+        df = self.excel_data.df_orders
+        order_count = df[( df[order_org]==loc_id ) | ( df[order_dst]==loc_id )].shape[0]
+        return order_count
 
+    def get_location_wait_time(self, loc_id):
+        df = self.log_data.waiting_events
+        df = df[df[a_loc_id]== loc_id]
+        wait_time = df[a_seconds].astype(int).sum()
+        return wait_time
+
+    def get_all_location_stats(self):
+        stats = []
+        for _,row in self.excel_data.df_locations.iterrows():
+            loc_id = row[loc_name]
+            order_count = self.get_location_order_count(loc_id)
+            wait_time = self.get_location_wait_time(loc_id)
+            print(f"location {loc_id}, has {order_count} orders and caused waiting time: {wait_time} s")
+            stats.append([order_count])
 
 if __name__ == "__main__":
     excel_data_path = "./VOSimu-InputInformation.xlsx"
@@ -159,5 +187,9 @@ if __name__ == "__main__":
     # print(f"distance = {dist} mm by SC002")
     # order_count = data_manager.get_assigned_orders_count("SC002")
     # print(f"order count = {order_count} orders assigned to SC002")
-    data_manager.get_all_vehicle_stats()
+    # data_manager.get_all_vehicle_stats()
+    count = data_manager.get_location_order_count("QC003")
+    print(f"{count} orders at location QC003")
+    data_manager.get_all_location_stats()
+
 

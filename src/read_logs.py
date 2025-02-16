@@ -13,6 +13,7 @@ class LogEventManager(object):
         self.free_lane_events = pd.DataFrame(columns=["timestamp", "loc_id", "lane_num", "order_id"])
         self.pickup_done_events = pd.DataFrame(columns=["timestamp", "vehicle_id", "body", "loc_id"])
         self.schedule_done_events = pd.DataFrame(columns=["timestamp", "schedule"])
+        self.waiting_events = pd.DataFrame(columns=["timestamp", "vehicle_id", "body", "loc_id", "seconds"])
 
 def parse_log_file(filepath):
     manager = LogEventManager()
@@ -44,6 +45,8 @@ def process_line(manager, line):
     if process_pickup_done_event_message(manager.pickup_done_events, line):
         return
     if process_schedule_done_message(manager.schedule_done_events, line):
+        return
+    if process_waiting_message(manager.waiting_events, line):
         return
 
 def process_added_container_message(added_containers, line, output=False):
@@ -143,6 +146,17 @@ def process_schedule_done_message(added_schedule, line, output=False):
         return True
     return False
 
+def process_waiting_message(recorded_events, line, output=False):
+    pattern = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) INFO (.+) (\(.+\)) waited at (.+); (.+) s'
+    matching = re.match(pattern, line)
+    if matching:
+        timestamp, vehicle_id, body, loc_id, seconds = matching.groups()
+        append(recorded_events,[timestamp, vehicle_id, body, loc_id, seconds])
+        if output:
+            print(f"timestamp {timestamp} vehicle {vehicle_id} waited at location {loc_id} for time {seconds} s")
+        return True
+    return False
+
 if __name__ == "__main__":
     manager = parse_log_file("./all-logs/logger_all.log")
-    manager.starting_events.to_csv("assigments.csv")
+    manager.waiting_events.to_csv("waited.csv")
