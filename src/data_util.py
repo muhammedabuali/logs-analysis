@@ -11,6 +11,8 @@ loc_name = "Location Name"
 a_loc_id = "loc_id"
 a_seconds = "seconds"
 a_timestamp = "timestamp"
+a_distance = "distance"
+a_id = "ID"
 
 
 # from date time to seconds in a day
@@ -98,7 +100,6 @@ class DataManager(object):
                 return False  # Overlapping exceeds capacity
         return True  # Valid schedule
 
-
     # check limited capacity at all locations is respected
     def check_all_capacities(self, max_capacity=2):
         locations = self.get_locations_with_limited_cap()
@@ -112,6 +113,27 @@ class DataManager(object):
                 failure = True
         return not failure
 
+    # get total distance traveled by vehicle [vehicle_id]
+    def get_distance_traveled(self, vehicle_id):
+        df = self.log_data.driving_events
+        df = df[df[a_vehicle_id]== vehicle_id]
+        distance = df[a_distance].map(lambda x: int(x)).sum()
+        return distance
+
+    # get count of assigned orders to  vehicle [vehicle_id]
+    def get_assigned_orders_count(self, vehicle_id):
+        df = self.log_data.starting_events
+        df = df[df[a_vehicle_id]== vehicle_id]
+        order_count = df[a_order_id].drop_duplicates().shape[0]
+        return order_count
+
+    def get_all_vehicle_stats(self):
+        stats = []
+        for _,row in self.excel_data.df_vehicles.iterrows():
+            dist = self.get_distance_traveled(row[a_id])
+            order_count = self.get_assigned_orders_count(row[a_id])
+            print(f"vehicle {row[a_id]}, traveled distance {dist} to fullfil {order_count} orders")
+            stats.append([dist, order_count])
 
 
 
@@ -132,5 +154,10 @@ if __name__ == "__main__":
     # success = data_manager.check_overcapacity_lanes("QC003")
     # if success:
     #     print("success, no overcapacity at QC003")
-    data_manager.check_all_capacities(2)
+    # data_manager.check_all_capacities(2)
+    # dist = data_manager.get_distance_traveled("SC002")
+    # print(f"distance = {dist} mm by SC002")
+    # order_count = data_manager.get_assigned_orders_count("SC002")
+    # print(f"order count = {order_count} orders assigned to SC002")
+    data_manager.get_all_vehicle_stats()
 
