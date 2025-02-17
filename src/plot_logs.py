@@ -17,7 +17,8 @@ def plot_log_data(excel_data_path, log_data_path):
     # plot_vehicle_gantt(excel_data, log_data)
     # plot_location_gantt(excel_data, log_data)
     # plot_lane_gantt(excel_data, log_data)
-    plot_vehicle_path(excel_data, log_data, "SC002")
+    # plot_vehicle_path(excel_data, log_data, "SC002")
+    plot_first_step(excel_data, log_data)
 
 # attribute names as variables to avoid typos
 a_timestamp = "timestamp"
@@ -150,6 +151,31 @@ def plot_vehicle_path(excel_data, log_data, vehicle_id):
     plt.xlabel(loc_x)
     plt.ylabel(loc_y)
     plt.title(f"Vehicle {vehicle_id} Path Plot")
+    plt.show()
+
+def plot_first_step(excel_data, log_data):
+    vehicles_df = excel_data.df_vehicles[[a_id, a_start_location]].rename(columns={a_id: a_vehicle_id}) 
+    # get name of the vehicle start location
+    start_locations = vehicles_df.merge(excel_data.df_locations, left_on=a_start_location, right_on=loc_name )
+    df = log_data.driving_events
+    df = df.merge(excel_data.df_locations, left_on=a_loc_id, right_on=loc_name)
+    step = 1
+    for _,row in df.iterrows():
+       print("vehicle", row[a_vehicle_id])
+       prev_x, prev_y = start_locations[start_locations[a_vehicle_id]==row[a_vehicle_id]][[loc_x,loc_y]].values[0]
+       plt.plot([prev_x, row[loc_x]], [prev_y, row[loc_y]],color="black")
+       plt.annotate(str(step)+",",
+                    xy=(row[loc_x], row[loc_y]),  # Arrow end (x2, y2)
+                            xytext=(row[loc_x] + (0.5*step), row[loc_y] +(step*0.2)),# Text position relative to arrow end
+                    arrowprops=dict(arrowstyle="->", color="black", linewidth=1))
+       if step == 20:
+           break
+       step += 1
+    print("last step", step)
+    plt.grid()
+    plt.xlabel(loc_x)
+    plt.ylabel(loc_y)
+    plt.title(f"Vehicles first move Plot")
     plt.show()
 
 if __name__ == "__main__":
